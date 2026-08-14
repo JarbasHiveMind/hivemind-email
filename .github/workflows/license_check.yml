@@ -1,0 +1,17 @@
+name: License Check
+
+on:
+  pull_request:
+    branches: [dev]
+  workflow_dispatch:
+
+jobs:
+  license_check:
+    uses: OpenVoiceOS/gh-automations/.github/workflows/license-check.yml@dev
+    with:
+      # this package caps requires-python <3.13 (PGPy/imghdr); the workflow
+      # defaults to 3.14, which can't install it.
+      python_version: '3.12'
+      # remailers is a TigreGotico Apache-2.0 dep installed from git, so the
+      # checker can't fetch its license from PyPI and reports "Error".
+      exclude_packages: '(?i:^remailers([=<>!~ @;].*)?$)'

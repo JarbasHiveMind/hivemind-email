@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hivemind-email"
+dynamic = ["version"]
+description = "HiveMind transport over email: carrier framing, email network protocol (wormhole), and NL bridge"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+# <3.13: PGPy (carrier crypto via remailers) imports the stdlib `imghdr`
+# module, removed in Python 3.13.
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "mail_monitor>=0.5",
+    "remailers @ git+https://github.com/TigreGotico/remailers",
+    "hivemind-plugin-manager>=0.7.1a1",
+    "hivemind_bus_client>=1.0.13a1",
+    "hivemind-core>=4.6.2a1",
+    "ovos-utils",
+    "ovos-bus-client>=2.0.0a3",
+]
+
+[project.optional-dependencies]
+# hivescope = in-process e2e harness used by tests/e2e/. Declared here (not
+# pinned in CI).
+test = ["pytest", "hivescope>=0.5.2a1"]
+
+[project.scripts]
+hivemind-email-wormhole = "hivemind_email.wormhole:main"
+hivemind-email-bridge   = "hivemind_email.bridge:main"
+hivemind-email-client   = "hivemind_email.client:main"
+
+[project.entry-points."hivemind.network.protocol"]
+hivemind-email-wormhole = "hivemind_email.wormhole:EmailWormhole"
+
+[tool.setuptools]
+packages = ["hivemind_email"]
+include-package-data = true
+
+[tool.setuptools.dynamic]
+version = {attr = "hivemind_email.version.__version__"}

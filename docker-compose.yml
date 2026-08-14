@@ -1,0 +1,53 @@
+version: "3.8"
+
+services:
+  # Open NL assistant-over-email: answers everyone who emails this mailbox.
+  hivemind-email-bridge:
+    build: .
+    image: hivemind-email-bridge
+    restart: unless-stopped
+    environment:
+      MODE: bridge
+      IMAP_HOST: "${IMAP_HOST:?set an IMAP host}"
+      IMAP_USER: "${IMAP_USER:?set an IMAP user}"
+      IMAP_PASSWORD: "${IMAP_PASSWORD:?set an IMAP app password}"
+      IMAP_PORT: "${IMAP_PORT:-993}"
+      SMTP_HOST: "${SMTP_HOST:-${IMAP_HOST}}"
+      SMTP_USER: "${SMTP_USER:-${IMAP_USER}}"
+      SMTP_PASSWORD: "${SMTP_PASSWORD:-${IMAP_PASSWORD}}"
+      SMTP_PORT: "${SMTP_PORT:-465}"
+      HIVEMIND_HOST: "${HIVEMIND_HOST:-hivemind-core}"
+      HIVEMIND_PORT: "${HIVEMIND_PORT:-5678}"
+      HIVEMIND_ACCESS_KEY: "${HIVEMIND_ACCESS_KEY}"
+      POLL_SECONDS: "${POLL_SECONDS:-30}"
+      # optional: comma-separated allowlist; unset = answer everyone
+      ALLOWED_SENDERS: "${ALLOWED_SENDERS:-}"
+    # if hivemind-core runs as another compose service, uncomment:
+    # depends_on:
+    #   - hivemind-core
+
+  # Peer-to-peer encrypted HiveMind wire-protocol link over email.
+  # Disabled by default; enable with `docker compose --profile wormhole up`.
+  hivemind-email-wormhole:
+    build: .
+    image: hivemind-email-wormhole
+    restart: unless-stopped
+    profiles: ["wormhole"]
+    environment:
+      MODE: wormhole
+      MY_SECRET: "${MY_SECRET:?set your hSub read passphrase}"
+      PEER_SECRET: "${PEER_SECRET:?set the peer's hSub read passphrase}"
+      PEER_EMAIL: "${PEER_EMAIL:?set the peer's email address}"
+      PEER_PUBKEY_PATH: "${PEER_PUBKEY_PATH:-/keys/peer.asc}"
+      KEY_PATH: "${KEY_PATH:-/keys/local.asc}"
+      IMAP_HOST: "${IMAP_HOST:?set an IMAP host}"
+      IMAP_USER: "${IMAP_USER:?set an IMAP user}"
+      IMAP_PASSWORD: "${IMAP_PASSWORD:?set an IMAP app password}"
+      IMAP_PORT: "${IMAP_PORT:-993}"
+      SMTP_HOST: "${SMTP_HOST:-${IMAP_HOST}}"
+      SMTP_USER: "${SMTP_USER:-${IMAP_USER}}"
+      SMTP_PASSWORD: "${SMTP_PASSWORD:-${IMAP_PASSWORD}}"
+      SMTP_PORT: "${SMTP_PORT:-465}"
+      POLL_SECONDS: "${POLL_SECONDS:-60}"
+    volumes:
+      - ./keys:/keys:ro
