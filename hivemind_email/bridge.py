@@ -32,6 +32,10 @@ from hivemind_bus_client.client import HiveMessageBusClient
 
 from hivemind_email.carrier import SMTPIMAPTransport
 
+# hivemind_bus_client>=1.0.13a1 makes connect() block on the handshake; None
+# retries forever, so a stalled/unreachable hub hangs the bridge. Bound it.
+DEFAULT_HANDSHAKE_MAX_RETRIES = 10
+
 
 # ---------------------------------------------------------------------------
 # Session/FIFO helpers
@@ -138,7 +142,7 @@ class EmailBridge(threading.Thread):
                 host=self.hive_host,
                 port=self.hive_port,
             )
-            self._hm_client.connect()
+            self._hm_client.connect(handshake_max_retries=DEFAULT_HANDSHAKE_MAX_RETRIES)
             self._connected.set()
         return self._hm_client
 

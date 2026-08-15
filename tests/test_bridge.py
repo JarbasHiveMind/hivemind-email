@@ -9,7 +9,7 @@ import time
 from typing import List
 from unittest.mock import MagicMock, patch
 
-from hivemind_email.bridge import EmailBridge
+from hivemind_email.bridge import EmailBridge, DEFAULT_HANDSHAKE_MAX_RETRIES
 from hivemind_email.carrier import EmailMessage
 
 
@@ -141,3 +141,23 @@ class TestEmailBridgeAnswersEveryone:
         sessions = {c.kwargs["context"]["session_id"] for c in client.ask.call_args_list}
         assert sessions == {"email-bridge-a@example.com", "email-bridge-b@example.com"}
         bridge.stop()
+
+
+def test_get_hm_client_bounds_handshake_retries():
+    """A stalled/unreachable hub must not hang connect() forever."""
+    transport = _FakeTransport()
+    bridge = EmailBridge(
+        transport=transport,
+        hive_host="127.0.0.1",
+        hive_port=5678,
+        hive_key="testkey",
+        poll_seconds=99999,
+    )
+    with patch("hivemind_email.bridge.HiveMessageBusClient") as MockClient:
+        instance = MockClient.return_value
+        bridge._get_hm_client()
+
+        instance.connect.assert_called_once()
+        kwargs = instance.connect.call_args.kwargs
+        assert kwargs.get("handshake_max_retries") == DEFAULT_HANDSHAKE_MAX_RETRIES
+        assert kwargs["handshake_max_retries"] is not None
