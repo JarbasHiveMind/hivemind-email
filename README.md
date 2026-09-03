@@ -40,8 +40,8 @@ local node  <---- EmailCarrier (PGP + hSub subject, SMTP/IMAP) ---->  peer node
   `EmailBridge`'s encrypted mode build on. It chunks arbitrary payloads into
   roughly 8 KB base64 frames, PGP-encrypts each to the peer's key, emails it
   with the subject stamped by `create_hsub(peer_secret)`, and reassembles
-  complete messages by polling a mailbox with
-  [`mail_monitor`](https://pypi.org/project/mail_monitor/) over IMAP.
+  complete messages by polling a mailbox over IMAP (`imaplib`, standard
+  library).
 - **Addressing** for the wormhole is hSub (hashed subject) plus a real
   recipient email address: a shared passphrase per peer, exchanged out of
   band together with PGP public keys.
@@ -97,7 +97,30 @@ hivemind-email-bridge \
 ```
 
 Add `--allowed-senders "a@example.com,b@example.com"` if you want a private
-assistant instead of a public one.
+assistant instead of a public one. With no `--allowed-senders`, the bridge
+answers ANY sender and logs a startup warning saying so.
+
+For personal remote control of your own hive, pair the allowlist with a
+subject token as a second factor -- sender addresses can be spoofed, so the
+allowlist alone only stops casual abuse:
+
+```bash
+hivemind-email-bridge \
+    --imap-host imap.gmail.com --imap-user assistant@example.com --imap-password "app-password" \
+    --smtp-host smtp.gmail.com \
+    --hive-host 127.0.0.1 --hive-key "my-hivemind-api-key" \
+    --allowed-senders "me@example.com" \
+    --subject-token "correct-horse-battery-staple"
+```
+
+Every email must then come from an allowlisted address AND have a Subject
+containing the token (case-insensitive substring match) to be processed.
+`--required-subject` works the same way and can be combined with
+`--subject-token`; when both are set, both must match. `--max-body-size`
+(default 16384 characters) rejects oversized bodies before they reach the
+hive. None of this is cryptographic sender authentication -- it is
+defense-in-depth for a mailbox you already trust; real signing is future
+work.
 
 ### Peer-to-peer protocol transport (`EmailWormhole`)
 
@@ -171,8 +194,6 @@ uv run pytest tests/
 - [hivemind-usenet](https://github.com/JarbasHiveMind/hivemind-usenet): the
   structural template this package follows, with Usenet instead of email as
   the carrier.
-- [mail_monitor](https://pypi.org/project/mail_monitor/): the IMAP polling
-  helper reused for the inbound side.
 - [remailers](https://github.com/TigreGotico/remailers): the PGP identity
   and hSub-subject layer reused for the encrypted transport framing.
 
