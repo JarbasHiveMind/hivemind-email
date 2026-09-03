@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.0a3](https://github.com/JarbasHiveMind/hivemind-email/tree/0.1.0a3) (2026-09-03)
+
+[Full Changelog](https://github.com/JarbasHiveMind/hivemind-email/compare/0.1.0a2...0.1.0a3)
+
+**Merged pull requests:**
+
+- refactor: use the clean mail-monitor package for IMAP receive instead of the stdlib stopgap [\#12](https://github.com/JarbasHiveMind/hivemind-email/pull/12) ([JarbasAl](https://github.com/JarbasAl))
+
+## [0.1.0a2](https://github.com/JarbasHiveMind/hivemind-email/tree/0.1.0a2) (2026-09-03)
+
+[Full Changelog](https://github.com/JarbasHiveMind/hivemind-email/compare/0.1.0a1...0.1.0a2)
+
 ## [0.1.0a1](https://github.com/JarbasHiveMind/hivemind-email/tree/0.1.0a1) (2026-09-03)
 
 [Full Changelog](https://github.com/JarbasHiveMind/hivemind-email/compare/80d961e6f4461c660fe4236d22638a940bd337a9...0.1.0a1)
