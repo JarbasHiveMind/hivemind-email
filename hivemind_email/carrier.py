@@ -12,9 +12,6 @@ that a frame is addressed to a specific recipient email instead of posted
 to a shared newsgroup.
 """
 import base64
-import email as email_lib
-import email.utils
-import imaplib
 import json
 import smtplib
 import uuid
@@ -22,6 +19,7 @@ from dataclasses import dataclass, field
 from email.mime.text import MIMEText
 from typing import Dict, List, Optional, Set, Tuple
 
+from mail_monitor import EmailClient
 from remailers import create_hsub, match_hsub
 from remailers.keys import Credentials
 
@@ -141,26 +139,8 @@ class EmailMessage:
     sender:  str = ""
 
 
-def _extract_body(msg: "email_lib.message.Message") -> str:
-    """Return the plain-text body of an email.message, walking multipart."""
-    if msg.is_multipart():
-        for part in msg.walk():
-            if part.get_content_type() == "text/plain" and \
-                    "attachment" not in str(part.get("Content-Disposition", "")):
-                payload = part.get_payload(decode=True)
-                if payload is not None:
-                    charset = part.get_content_charset() or "utf-8"
-                    return payload.decode(charset, errors="replace")
-        return ""
-    payload = msg.get_payload(decode=True)
-    if payload is None:
-        return ""
-    charset = msg.get_content_charset() or "utf-8"
-    return payload.decode(charset, errors="replace")
-
-
 class SMTPIMAPTransport:
-    """Default live transport: sends via smtplib, polls via stdlib imaplib.
+    """Default live transport: sends via smtplib, polls via mail_monitor.
 
     Only imported/instantiated when actually used (live network path); the
     offline test-suite injects a stub transport instead.
@@ -202,41 +182,20 @@ class SMTPIMAPTransport:
             s.sendmail(self.from_addr, [to_addr], msg.as_string())
 
     def poll(self, limit: int = 200) -> List[EmailMessage]:
-        """Fetch UNSEEN mail over IMAP4_SSL, marking it seen, via stdlib only."""
-        conn = imaplib.IMAP4_SSL(self.imap_host, self.imap_port)
-        out: List[EmailMessage] = []
-        try:
-            conn.login(self.imap_user, self.imap_password)
-            conn.select(self.folder)
-            typ, data = conn.search(None, "(UNSEEN)")
-            if typ != "OK" or not data or not data[0]:
-                return []
-
-            nums = data[0].split()[:limit]
-            for num in nums:
-                typ, msg_data = conn.fetch(num, "(RFC822)")
-                if typ != "OK" or not msg_data or not msg_data[0]:
-                    continue
-                raw = msg_data[0][1]
-                msg = email_lib.message_from_bytes(raw)
-                sender  = email.utils.parseaddr(msg.get("From", ""))[1]
-                subject = str(msg.get("Subject", ""))
-                body    = _extract_body(msg)
-                out.append(EmailMessage(subject=subject, text=body, sender=sender))
-                if self.mark_seen:
-                    conn.store(num, "+FLAGS", "\\Seen")
-                else:
-                    conn.store(num, "-FLAGS", "\\Seen")
-            return out
-        finally:
-            try:
-                conn.close()
-            except Exception:
-                pass
-            try:
-                conn.logout()
-            except Exception:
-                pass
+        """Fetch UNSEEN mail over IMAP, marking it seen, via mail_monitor."""
+        client = EmailClient(
+            self.imap_user, self.imap_password, self.imap_host,
+            self.imap_port, self.folder,
+        )
+        mails = client.list_new_emails(mark_as_seen=self.mark_seen)
+        return [
+            EmailMessage(
+                subject=mail.get("subject", ""),
+                text=mail.get("payload", ""),
+                sender=mail.get("email", ""),
+            )
+            for mail in mails[:limit]
+        ]
 
 
 # ---------------------------------------------------------------------------
