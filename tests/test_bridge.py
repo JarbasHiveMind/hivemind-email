@@ -143,6 +143,99 @@ class TestEmailBridgeAnswersEveryone:
         bridge.stop()
 
 
+class TestBridgeSecurityKnobs:
+    """required_subject / subject_token / max_body_size gates on top of allowlist."""
+
+    def test_matching_required_subject_is_processed(self):
+        transport = _FakeTransport([
+            EmailMessage(subject="hive: status", text="ping", sender="a@example.com"),
+        ])
+        bridge, client = _make_bridge(transport, allowed_senders={"a@example.com"})
+        bridge.required_subject = "hive:"
+        bridge._poll_once()
+
+        assert _wait_for(lambda: len(transport.sent) == 1)
+        bridge.stop()
+
+    def test_missing_required_subject_is_ignored(self):
+        transport = _FakeTransport([
+            EmailMessage(subject="unrelated", text="ping", sender="a@example.com"),
+        ])
+        bridge, client = _make_bridge(transport, allowed_senders={"a@example.com"})
+        bridge.required_subject = "hive:"
+        bridge._poll_once()
+
+        time.sleep(0.1)
+        assert transport.sent == []
+        client.ask.assert_not_called()
+        bridge.stop()
+
+    def test_wrong_required_subject_is_ignored(self):
+        transport = _FakeTransport([
+            EmailMessage(subject="totally different topic", text="ping", sender="a@example.com"),
+        ])
+        bridge, client = _make_bridge(transport, allowed_senders={"a@example.com"})
+        bridge.required_subject = "hive:"
+        bridge._poll_once()
+
+        time.sleep(0.1)
+        assert transport.sent == []
+        bridge.stop()
+
+    def test_subject_token_is_case_insensitive_contains(self):
+        transport = _FakeTransport([
+            EmailMessage(subject="Re: MySecretTOKEN please", text="ping", sender="a@example.com"),
+        ])
+        bridge, client = _make_bridge(transport, allowed_senders={"a@example.com"})
+        bridge.subject_token = "mysecrettoken"
+        bridge._poll_once()
+
+        assert _wait_for(lambda: len(transport.sent) == 1)
+        bridge.stop()
+
+    def test_both_required_subject_and_token_must_match(self):
+        transport = _FakeTransport([
+            EmailMessage(subject="hive: mysecrettoken", text="ping", sender="a@example.com"),
+            EmailMessage(subject="hive: only", text="ping", sender="a@example.com"),
+        ])
+        bridge, client = _make_bridge(transport, allowed_senders={"a@example.com"})
+        bridge.required_subject = "hive:"
+        bridge.subject_token = "mysecrettoken"
+        bridge._poll_once()
+
+        assert _wait_for(lambda: len(transport.sent) == 1)
+        time.sleep(0.1)
+        assert len(transport.sent) == 1
+        bridge.stop()
+
+    def test_oversized_body_is_rejected(self):
+        transport = _FakeTransport([
+            EmailMessage(subject="hi", text="x" * 100, sender="a@example.com"),
+        ])
+        bridge, client = _make_bridge(transport, allowed_senders={"a@example.com"})
+        bridge.max_body_size = 10
+        bridge._poll_once()
+
+        time.sleep(0.1)
+        assert transport.sent == []
+        client.ask.assert_not_called()
+        bridge.stop()
+
+    def test_accept_all_logs_warning_when_no_allowlist(self, caplog):
+        import logging
+        transport = _FakeTransport()
+        with caplog.at_level(logging.WARNING):
+            bridge = EmailBridge(
+                transport=transport,
+                hive_host="127.0.0.1",
+                hive_port=5678,
+                hive_key="testkey",
+                poll_seconds=99999,
+            )
+        assert any("ANY sender" in rec.message for rec in caplog.records)
+        bridge.stop()
+
+
 def test_get_hm_client_bounds_handshake_retries():
     """A stalled/unreachable hub must not hang connect() forever."""
     transport = _FakeTransport()

@@ -12,7 +12,6 @@ license = {text = "Apache-2.0"}
 # module, removed in Python 3.13.
 requires-python = ">=3.10,<3.13"
 dependencies = [
-    "mail_monitor>=0.5",
     "remailers @ git+https://github.com/TigreGotico/remailers",
     "hivemind-plugin-manager>=0.7.1a1",
     "hivemind_bus_client>=1.0.13a1",

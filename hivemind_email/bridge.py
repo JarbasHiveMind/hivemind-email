@@ -96,30 +96,54 @@ class EmailBridge(threading.Thread):
         poll_seconds     - Poll cadence (default 30).
         poll_limit       - Mails per poll (default 200).
         allowed_senders  - Optional set of sender addresses to allowlist;
-                            None (default) = answer EVERYONE who emails in.
+                            None (default) = answer EVERYONE who emails in,
+                            which logs a prominent startup warning.
+        required_subject - Optional string the Subject must CONTAIN
+                            (case-insensitive) for the mail to be processed.
+        subject_token    - Same second factor as required_subject, worded
+                            for a secret token; if both are set, BOTH must
+                            match. Defense-in-depth for personal use: sender
+                            addresses can be spoofed, so pair the allowlist
+                            with a subject token you keep secret.
+        max_body_size    - Reject (ignore) any email whose body exceeds this
+                            many characters (default 16384).
     """
 
     def __init__(
         self,
         transport,
-        hive_host:       str = "127.0.0.1",
-        hive_port:       int = 5678,
-        hive_key:        str = "",
-        from_addr:       str = "",
-        poll_seconds:    int = 30,
-        poll_limit:      int = 200,
-        allowed_senders: Optional[Set[str]] = None,
+        hive_host:        str = "127.0.0.1",
+        hive_port:        int = 5678,
+        hive_key:         str = "",
+        from_addr:        str = "",
+        poll_seconds:     int = 30,
+        poll_limit:       int = 200,
+        allowed_senders:  Optional[Set[str]] = None,
+        required_subject: Optional[str] = None,
+        subject_token:    Optional[str] = None,
+        max_body_size:    int = 16384,
         **kwargs,
     ) -> None:
         super().__init__(daemon=True, **kwargs)
-        self.transport       = transport
-        self.hive_host       = hive_host
-        self.hive_port       = hive_port
-        self.hive_key        = hive_key
-        self.from_addr       = (from_addr or getattr(transport, "from_addr", "")).lower()
-        self.poll_seconds    = poll_seconds
-        self.poll_limit      = poll_limit
-        self.allowed_senders = allowed_senders
+        self.transport        = transport
+        self.hive_host        = hive_host
+        self.hive_port        = hive_port
+        self.hive_key         = hive_key
+        self.from_addr        = (from_addr or getattr(transport, "from_addr", "")).lower()
+        self.poll_seconds     = poll_seconds
+        self.poll_limit       = poll_limit
+        self.allowed_senders  = allowed_senders
+        self.required_subject = required_subject
+        self.subject_token    = subject_token
+        self.max_body_size    = max_body_size
+
+        if not self.allowed_senders:
+            LOG.warning(
+                "EmailBridge: no allowed_senders configured - the bridge will "
+                "answer mail from ANY sender. Set allowed_senders for a "
+                "personal/private deployment, ideally together with "
+                "required_subject/subject_token."
+            )
 
         self._stop = threading.Event()
         self._connected = threading.Event()
@@ -198,11 +222,15 @@ class EmailBridge(threading.Thread):
     # Inbound polling
     # ------------------------------------------------------------------
 
-    def _handle_mail(self, subject: str, text: str, peer_email: str) -> None:
-        text = (text or "").strip()
-        if not text:
-            return
+    def _subject_allowed(self, subject: str) -> bool:
+        """True unless a required subject/token is set and absent (case-insensitive)."""
+        haystack = (subject or "").lower()
+        for needle in (self.required_subject, self.subject_token):
+            if needle and needle.lower() not in haystack:
+                return False
+        return True
 
+    def _handle_mail(self, subject: str, text: str, peer_email: str) -> None:
         peer_email = (peer_email or "").lower()
         if not peer_email:
             LOG.debug("EmailBridge: mail with no sender address, dropping")
@@ -214,6 +242,19 @@ class EmailBridge(threading.Thread):
 
         if self.allowed_senders is not None and peer_email not in self.allowed_senders:
             LOG.debug("EmailBridge: ignoring sender %s (not in allowlist)", peer_email)
+            return
+
+        if not self._subject_allowed(subject):
+            LOG.debug("EmailBridge: ignoring %s (subject filter not matched)", peer_email)
+            return
+
+        text = (text or "").strip()
+        if not text:
+            return
+
+        if len(text) > self.max_body_size:
+            LOG.debug("EmailBridge: ignoring oversized email from %s (%d chars > %d)",
+                      peer_email, len(text), self.max_body_size)
             return
 
         session_id = self._session_id(peer_email)
@@ -277,6 +318,14 @@ def main() -> None:
     parser.add_argument("--poll-seconds",  type=int, default=30)
     parser.add_argument("--allowed-senders", default=None,
                          help="Comma-separated allowlist; omit to answer everyone")
+    parser.add_argument("--required-subject", default=None,
+                         help="Only process mail whose subject contains this "
+                              "(case-insensitive).")
+    parser.add_argument("--subject-token", default=None,
+                         help="Secret token the subject must contain "
+                              "(case-insensitive); defense-in-depth.")
+    parser.add_argument("--max-body-size", type=int, default=16384,
+                         help="Reject emails whose body exceeds this many chars.")
     args = parser.parse_args()
 
     transport = SMTPIMAPTransport(
@@ -302,6 +351,9 @@ def main() -> None:
         hive_key        = args.hive_key,
         poll_seconds    = args.poll_seconds,
         allowed_senders = allowed,
+        required_subject = args.required_subject,
+        subject_token    = args.subject_token,
+        max_body_size    = args.max_body_size,
     )
     bridge.start()
     bridge.join()

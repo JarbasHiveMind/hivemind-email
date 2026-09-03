@@ -12,6 +12,9 @@ that a frame is addressed to a specific recipient email instead of posted
 to a shared newsgroup.
 """
 import base64
+import email as email_lib
+import email.utils
+import imaplib
 import json
 import smtplib
 import uuid
@@ -138,8 +141,26 @@ class EmailMessage:
     sender:  str = ""
 
 
+def _extract_body(msg: "email_lib.message.Message") -> str:
+    """Return the plain-text body of an email.message, walking multipart."""
+    if msg.is_multipart():
+        for part in msg.walk():
+            if part.get_content_type() == "text/plain" and \
+                    "attachment" not in str(part.get("Content-Disposition", "")):
+                payload = part.get_payload(decode=True)
+                if payload is not None:
+                    charset = part.get_content_charset() or "utf-8"
+                    return payload.decode(charset, errors="replace")
+        return ""
+    payload = msg.get_payload(decode=True)
+    if payload is None:
+        return ""
+    charset = msg.get_content_charset() or "utf-8"
+    return payload.decode(charset, errors="replace")
+
+
 class SMTPIMAPTransport:
-    """Default live transport: sends via smtplib, polls via mail_monitor.
+    """Default live transport: sends via smtplib, polls via stdlib imaplib.
 
     Only imported/instantiated when actually used (live network path); the
     offline test-suite injects a stub transport instead.
@@ -157,6 +178,7 @@ class SMTPIMAPTransport:
         imap_port: int = 993,
         from_addr: Optional[str] = None,
         folder: str = "inbox",
+        mark_seen: bool = True,
     ) -> None:
         self.smtp_host     = smtp_host
         self.smtp_port     = smtp_port
@@ -168,10 +190,7 @@ class SMTPIMAPTransport:
         self.imap_user     = imap_user
         self.imap_password = imap_password
         self.folder        = folder
-
-        from mail_monitor import EmailClient
-        self._imap = EmailClient(imap_user, imap_password, address=imap_host,
-                                  port=imap_port, folder=folder)
+        self.mark_seen     = mark_seen
 
     def send(self, to_addr: str, subject: str, body: str) -> None:
         msg = MIMEText(body, "plain", "utf-8")
@@ -183,13 +202,41 @@ class SMTPIMAPTransport:
             s.sendmail(self.from_addr, [to_addr], msg.as_string())
 
     def poll(self, limit: int = 200) -> List[EmailMessage]:
-        mails = self._imap.list_new_emails(mark_as_seen=True)
-        out = [
-            EmailMessage(subject=m.get("subject", ""), text=m.get("payload", ""),
-                         sender=m.get("email", ""))
-            for m in mails
-        ]
-        return out[:limit]
+        """Fetch UNSEEN mail over IMAP4_SSL, marking it seen, via stdlib only."""
+        conn = imaplib.IMAP4_SSL(self.imap_host, self.imap_port)
+        out: List[EmailMessage] = []
+        try:
+            conn.login(self.imap_user, self.imap_password)
+            conn.select(self.folder)
+            typ, data = conn.search(None, "(UNSEEN)")
+            if typ != "OK" or not data or not data[0]:
+                return []
+
+            nums = data[0].split()[:limit]
+            for num in nums:
+                typ, msg_data = conn.fetch(num, "(RFC822)")
+                if typ != "OK" or not msg_data or not msg_data[0]:
+                    continue
+                raw = msg_data[0][1]
+                msg = email_lib.message_from_bytes(raw)
+                sender  = email.utils.parseaddr(msg.get("From", ""))[1]
+                subject = str(msg.get("Subject", ""))
+                body    = _extract_body(msg)
+                out.append(EmailMessage(subject=subject, text=body, sender=sender))
+                if self.mark_seen:
+                    conn.store(num, "+FLAGS", "\\Seen")
+                else:
+                    conn.store(num, "-FLAGS", "\\Seen")
+            return out
+        finally:
+            try:
+                conn.close()
+            except Exception:
+                pass
+            try:
+                conn.logout()
+            except Exception:
+                pass
 
 
 # ---------------------------------------------------------------------------

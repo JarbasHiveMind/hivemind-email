@@ -6,7 +6,10 @@ test_carrier.py strategy.
 """
 import base64
 import json
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from typing import Dict, List, Optional, Tuple
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -17,6 +20,7 @@ from hivemind_email.carrier import (
     EmailCarrier,
     EmailMessage,
     Frame,
+    SMTPIMAPTransport,
     _KIND_HIVE,
     _KIND_NL,
 )
@@ -271,3 +275,89 @@ class TestEmailCarrier:
         results = c.poll("empty")
         assert len(results) == 1
         assert results[0][1] == b""
+
+
+# ---------------------------------------------------------------------------
+# SMTPIMAPTransport.poll() -- stdlib imaplib replacement for mail_monitor
+# ---------------------------------------------------------------------------
+
+class TestSMTPIMAPTransportPoll:
+    """poll() must speak IMAP4_SSL/RFC822 directly, with no mail_monitor."""
+
+    def _make_transport(self, mark_seen: bool = True) -> SMTPIMAPTransport:
+        return SMTPIMAPTransport(
+            smtp_host="smtp.example.com",
+            smtp_user="me@example.com",
+            smtp_password="pw",
+            imap_host="imap.example.com",
+            imap_user="me@example.com",
+            imap_password="pw",
+            mark_seen=mark_seen,
+        )
+
+    @patch("hivemind_email.carrier.imaplib.IMAP4_SSL")
+    def test_plain_message_parsed(self, mock_imap_cls):
+        raw = MIMEText("hello world", "plain", "utf-8")
+        raw["From"] = "Alice <alice@example.com>"
+        raw["Subject"] = "hi there"
+
+        conn = MagicMock()
+        mock_imap_cls.return_value = conn
+        conn.search.return_value = ("OK", [b"1"])
+        conn.fetch.return_value = ("OK", [(b"1 (RFC822 {n})", raw.as_bytes())])
+
+        transport = self._make_transport()
+        out = transport.poll()
+
+        assert len(out) == 1
+        assert out[0].sender == "alice@example.com"
+        assert out[0].subject == "hi there"
+        assert out[0].text.strip() == "hello world"
+        conn.login.assert_called_once_with("me@example.com", "pw")
+        conn.select.assert_called_once_with("inbox")
+        conn.store.assert_called_once_with(b"1", "+FLAGS", "\\Seen")
+
+    @patch("hivemind_email.carrier.imaplib.IMAP4_SSL")
+    def test_multipart_prefers_plain_text(self, mock_imap_cls):
+        raw = MIMEMultipart("alternative")
+        raw["From"] = "bob@example.com"
+        raw["Subject"] = "multi"
+        raw.attach(MIMEText("<p>rich body</p>", "html", "utf-8"))
+        raw.attach(MIMEText("plain body", "plain", "utf-8"))
+
+        conn = MagicMock()
+        mock_imap_cls.return_value = conn
+        conn.search.return_value = ("OK", [b"7"])
+        conn.fetch.return_value = ("OK", [(b"7 (RFC822 {n})", raw.as_bytes())])
+
+        transport = self._make_transport()
+        out = transport.poll()
+
+        assert len(out) == 1
+        assert out[0].text.strip() == "plain body"
+
+    @patch("hivemind_email.carrier.imaplib.IMAP4_SSL")
+    def test_no_unseen_returns_empty(self, mock_imap_cls):
+        conn = MagicMock()
+        mock_imap_cls.return_value = conn
+        conn.search.return_value = ("OK", [b""])
+
+        transport = self._make_transport()
+        assert transport.poll() == []
+        conn.fetch.assert_not_called()
+
+    @patch("hivemind_email.carrier.imaplib.IMAP4_SSL")
+    def test_mark_seen_false_leaves_unseen(self, mock_imap_cls):
+        raw = MIMEText("body", "plain", "utf-8")
+        raw["From"] = "c@example.com"
+        raw["Subject"] = "s"
+
+        conn = MagicMock()
+        mock_imap_cls.return_value = conn
+        conn.search.return_value = ("OK", [b"3"])
+        conn.fetch.return_value = ("OK", [(b"3 (RFC822 {n})", raw.as_bytes())])
+
+        transport = self._make_transport(mark_seen=False)
+        transport.poll()
+
+        conn.store.assert_called_once_with(b"3", "-FLAGS", "\\Seen")
