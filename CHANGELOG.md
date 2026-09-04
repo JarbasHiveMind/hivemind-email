@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.1a1](https://github.com/JarbasHiveMind/hivemind-email/tree/0.1.1a1) (2026-09-04)
+
+[Full Changelog](https://github.com/JarbasHiveMind/hivemind-email/compare/0.1.0a4...0.1.1a1)
+
+**Merged pull requests:**
+
+- fix: authenticate via password \(v3 Noise PSK\) instead of relying on the removed crypto\_key [\#13](https://github.com/JarbasHiveMind/hivemind-email/pull/13) ([JarbasAl](https://github.com/JarbasAl))
+
+## [0.1.0a4](https://github.com/JarbasHiveMind/hivemind-email/tree/0.1.0a4) (2026-09-03)
+
+[Full Changelog](https://github.com/JarbasHiveMind/hivemind-email/compare/0.1.0a3...0.1.0a4)
+
 ## [0.1.0a3](https://github.com/JarbasHiveMind/hivemind-email/tree/0.1.0a3) (2026-09-03)
 
 [Full Changelog](https://github.com/JarbasHiveMind/hivemind-email/compare/0.1.0a2...0.1.0a3)
