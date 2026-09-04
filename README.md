@@ -93,8 +93,12 @@ that mailbox gets an answer from the hive:
 hivemind-email-bridge \
     --imap-host imap.gmail.com --imap-user assistant@example.com --imap-password "app-password" \
     --smtp-host smtp.gmail.com \
-    --hive-host 127.0.0.1 --hive-key "my-hivemind-api-key"
+    --hive-host 127.0.0.1 --hive-key "my-hivemind-api-key" --hive-password "my-hivemind-password"
 ```
+
+`--hive-key` is the access key and `--hive-password` is the Noise PSK
+password -- both are required to authenticate against a v3-Noise-only
+HiveMind hub. The legacy `crypto_key` is not used for authentication.
 
 Add `--allowed-senders "a@example.com,b@example.com"` if you want a private
 assistant instead of a public one. With no `--allowed-senders`, the bridge
@@ -108,7 +112,7 @@ allowlist alone only stops casual abuse:
 hivemind-email-bridge \
     --imap-host imap.gmail.com --imap-user assistant@example.com --imap-password "app-password" \
     --smtp-host smtp.gmail.com \
-    --hive-host 127.0.0.1 --hive-key "my-hivemind-api-key" \
+    --hive-host 127.0.0.1 --hive-key "my-hivemind-api-key" --hive-password "my-hivemind-password" \
     --allowed-senders "me@example.com" \
     --subject-token "correct-horse-battery-staple"
 ```
