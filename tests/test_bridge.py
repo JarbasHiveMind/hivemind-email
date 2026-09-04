@@ -254,3 +254,23 @@ def test_get_hm_client_bounds_handshake_retries():
         kwargs = instance.connect.call_args.kwargs
         assert kwargs.get("handshake_max_retries") == DEFAULT_HANDSHAKE_MAX_RETRIES
         assert kwargs["handshake_max_retries"] is not None
+
+
+def test_get_hm_client_passes_password_for_v3_noise():
+    """A v3-Noise-only hub requires the PSK password alongside the key."""
+    transport = _FakeTransport()
+    bridge = EmailBridge(
+        transport=transport,
+        hive_host="127.0.0.1",
+        hive_port=5678,
+        hive_key="testkey",
+        hive_password="testpassword",
+        poll_seconds=99999,
+    )
+    with patch("hivemind_email.bridge.HiveMessageBusClient") as MockClient:
+        bridge._get_hm_client()
+
+        MockClient.assert_called_once()
+        kwargs = MockClient.call_args.kwargs
+        assert kwargs.get("key") == "testkey"
+        assert kwargs.get("password") == "testpassword"

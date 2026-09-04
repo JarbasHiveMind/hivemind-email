@@ -89,7 +89,10 @@ class EmailBridge(threading.Thread):
                             send()/poll() against the bridge's mailbox.
         hive_host        - HiveMind server host.
         hive_port        - HiveMind server port (default 5678).
-        hive_key         - API key for HiveMind connection.
+        hive_key         - API access key for HiveMind connection.
+        hive_password    - Noise PSK password for HiveMind connection
+                            (required by a v3-Noise-only hub; the legacy
+                            crypto_key is not accepted server-side).
         from_addr        - The bridge's own email address (used to skip
                             its own outgoing mail if it ever shows back up,
                             and as the From: on replies).
@@ -115,6 +118,7 @@ class EmailBridge(threading.Thread):
         hive_host:        str = "127.0.0.1",
         hive_port:        int = 5678,
         hive_key:         str = "",
+        hive_password:    str = "",
         from_addr:        str = "",
         poll_seconds:     int = 30,
         poll_limit:       int = 200,
@@ -129,6 +133,7 @@ class EmailBridge(threading.Thread):
         self.hive_host        = hive_host
         self.hive_port        = hive_port
         self.hive_key         = hive_key
+        self.hive_password    = hive_password
         self.from_addr        = (from_addr or getattr(transport, "from_addr", "")).lower()
         self.poll_seconds     = poll_seconds
         self.poll_limit       = poll_limit
@@ -163,6 +168,7 @@ class EmailBridge(threading.Thread):
         if self._hm_client is None:
             self._hm_client = HiveMessageBusClient(
                 key=self.hive_key,
+                password=self.hive_password,
                 host=self.hive_host,
                 port=self.hive_port,
             )
@@ -315,6 +321,9 @@ def main() -> None:
     parser.add_argument("--hive-host",     default="127.0.0.1")
     parser.add_argument("--hive-port",     type=int, default=5678)
     parser.add_argument("--hive-key",      default="")
+    parser.add_argument("--hive-password", default="",
+                         help="Noise PSK password for the HiveMind connection "
+                              "(required by a v3-Noise-only hub).")
     parser.add_argument("--poll-seconds",  type=int, default=30)
     parser.add_argument("--allowed-senders", default=None,
                          help="Comma-separated allowlist; omit to answer everyone")
@@ -349,6 +358,7 @@ def main() -> None:
         hive_host       = args.hive_host,
         hive_port       = args.hive_port,
         hive_key        = args.hive_key,
+        hive_password   = args.hive_password,
         poll_seconds    = args.poll_seconds,
         allowed_senders = allowed,
         required_subject = args.required_subject,
