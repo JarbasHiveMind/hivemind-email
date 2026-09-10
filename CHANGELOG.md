@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1a3](https://github.com/JarbasHiveMind/hivemind-email/tree/0.1.1a3) (2026-09-10)
+
+[Full Changelog](https://github.com/JarbasHiveMind/hivemind-email/compare/0.1.1a2...0.1.1a3)
+
+**Merged pull requests:**
+
+- Update docker/login-action action to v4 [\#8](https://github.com/JarbasHiveMind/hivemind-email/pull/8) ([renovate[bot]](https://github.com/apps/renovate))
+
 ## [0.1.1a2](https://github.com/JarbasHiveMind/hivemind-email/tree/0.1.1a2) (2026-09-10)
 
 [Full Changelog](https://github.com/JarbasHiveMind/hivemind-email/compare/0.1.1a1...0.1.1a2)
