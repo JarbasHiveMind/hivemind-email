@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1a5](https://github.com/JarbasHiveMind/hivemind-email/tree/0.1.1a5) (2026-09-10)
+
+[Full Changelog](https://github.com/JarbasHiveMind/hivemind-email/compare/0.1.1a4...0.1.1a5)
+
+**Merged pull requests:**
+
+- docs: cite the governing specification in the module docstring [\#14](https://github.com/JarbasHiveMind/hivemind-email/pull/14) ([openvoiceos-bot](https://github.com/openvoiceos-bot))
+
 ## [0.1.1a4](https://github.com/JarbasHiveMind/hivemind-email/tree/0.1.1a4) (2026-09-10)
 
 [Full Changelog](https://github.com/JarbasHiveMind/hivemind-email/compare/0.1.1a3...0.1.1a4)
