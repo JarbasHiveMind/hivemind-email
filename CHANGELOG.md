@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1a6](https://github.com/JarbasHiveMind/hivemind-email/tree/0.1.1a6) (2026-09-10)
+
+[Full Changelog](https://github.com/JarbasHiveMind/hivemind-email/compare/0.1.1a5...0.1.1a6)
+
+**Merged pull requests:**
+
+- Update docker/setup-buildx-action action to v4 [\#10](https://github.com/JarbasHiveMind/hivemind-email/pull/10) ([renovate[bot]](https://github.com/apps/renovate))
+
 ## [0.1.1a5](https://github.com/JarbasHiveMind/hivemind-email/tree/0.1.1a5) (2026-09-10)
 
 [Full Changelog](https://github.com/JarbasHiveMind/hivemind-email/compare/0.1.1a4...0.1.1a5)
