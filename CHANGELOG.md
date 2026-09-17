@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.2a1](https://github.com/JarbasHiveMind/hivemind-email/tree/0.1.2a1) (2026-09-17)
+
+[Full Changelog](https://github.com/JarbasHiveMind/hivemind-email/compare/0.1.1a6...0.1.2a1)
+
+**Merged pull requests:**
+
+- fix: take remailers from PyPI so the package can publish [\#16](https://github.com/JarbasHiveMind/hivemind-email/pull/16) ([openvoiceos-bot](https://github.com/openvoiceos-bot))
+
 ## [0.1.1a6](https://github.com/JarbasHiveMind/hivemind-email/tree/0.1.1a6) (2026-09-10)
 
 [Full Changelog](https://github.com/JarbasHiveMind/hivemind-email/compare/0.1.1a5...0.1.1a6)
