@@ -57,8 +57,14 @@ def _make_client_connection(peer_id: str, carrier: EmailCarrier, peer_email: str
         carrier.send(data, to_addr=peer_email, peer_secret=peer_secret,
                      peer_pubkey=peer_pubkey, kind=_KIND_HIVE)
 
-    def _disconnect() -> None:
-        LOG.debug(f"EmailWormhole: peer disconnected: {peer_id}")
+    def _disconnect(code: int = 1000, reason: str = "") -> None:
+        # Core closes a connection WITH a code: non_noise_frame,
+        # invalid_noise_frame and unencrypted_frame all pass one, and the
+        # five origination-permission kicks do too. Without these parameters
+        # every one of those raises TypeError on this transport instead of
+        # closing the peer. The other four transports already take them.
+        LOG.debug(f"EmailWormhole: peer disconnected: {peer_id} "
+                  f"(code={code}, reason={reason})")
 
     return HiveMindClientConnection(
         key         = peer_id,
