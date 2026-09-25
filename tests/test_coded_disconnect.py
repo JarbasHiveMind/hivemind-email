@@ -19,10 +19,19 @@ from hivemind_email.wormhole import _make_client_connection
 
 # the repo's own fake, so this file does not invent a second one:
 # HiveMindClientConnection.__post_init__ reads the protocol's RSA key.
-from tests.test_wormhole import _FakeHmProtocol
 
 
 def _connection():
+    # Imported here, not at module level. ``tests`` is a package, and under
+    # pytest the repository root is on sys.path so ``tests.test_wormhole``
+    # resolves; a DIRECT run of this file puts ``tests/`` on sys.path instead
+    # and the package cannot be found, so a module-level import made this the
+    # only file in the suite that exits 1 on ``python tests/<file>.py``. The
+    # other four import cleanly and do nothing. Deferring the import to call
+    # time keeps the repository's one shared fake and makes this file behave
+    # like its siblings.
+    from tests.test_wormhole import _FakeHmProtocol
+
     return _make_client_connection(
         peer_id="peer-1",
         carrier=MagicMock(spec=EmailCarrier),
