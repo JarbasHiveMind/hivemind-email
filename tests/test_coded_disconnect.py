@@ -72,6 +72,3 @@ class TestTheCloseTakesACodeAndReason(unittest.TestCase):
         self.assertIn("1008", said)
         self.assertIn("origination permission denied", said)
 
-
-if __name__ == "__main__":
-    unittest.main()
