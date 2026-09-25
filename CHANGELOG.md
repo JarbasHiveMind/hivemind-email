@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.3a2](https://github.com/JarbasHiveMind/hivemind-email/tree/0.1.3a2) (2026-09-25)
+
+[Full Changelog](https://github.com/JarbasHiveMind/hivemind-email/compare/0.1.3a1...0.1.3a2)
+
+**Merged pull requests:**
+
+- test: every test file imports cleanly when run on its own [\#18](https://github.com/JarbasHiveMind/hivemind-email/pull/18) ([openvoiceos-bot](https://github.com/openvoiceos-bot))
+
 ## [0.1.3a1](https://github.com/JarbasHiveMind/hivemind-email/tree/0.1.3a1) (2026-09-25)
 
 [Full Changelog](https://github.com/JarbasHiveMind/hivemind-email/compare/0.1.2a1...0.1.3a1)
