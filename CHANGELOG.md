@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.3a1](https://github.com/JarbasHiveMind/hivemind-email/tree/0.1.3a1) (2026-09-25)
+
+[Full Changelog](https://github.com/JarbasHiveMind/hivemind-email/compare/0.1.2a1...0.1.3a1)
+
+**Merged pull requests:**
+
+- fix: the wormhole close takes a code and a reason [\#17](https://github.com/JarbasHiveMind/hivemind-email/pull/17) ([openvoiceos-bot](https://github.com/openvoiceos-bot))
+
 ## [0.1.2a1](https://github.com/JarbasHiveMind/hivemind-email/tree/0.1.2a1) (2026-09-17)
 
 [Full Changelog](https://github.com/JarbasHiveMind/hivemind-email/compare/0.1.1a6...0.1.2a1)
