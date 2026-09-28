@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.4a1](https://github.com/JarbasHiveMind/hivemind-email/tree/0.1.4a1) (2026-09-28)
+
+[Full Changelog](https://github.com/JarbasHiveMind/hivemind-email/compare/0.1.3a2...0.1.4a1)
+
+**Merged pull requests:**
+
+- fix\(tests\): share the fake through a non-package module, and guard the deferred import [\#19](https://github.com/JarbasHiveMind/hivemind-email/pull/19) ([openvoiceos-bot](https://github.com/openvoiceos-bot))
+
 ## [0.1.3a2](https://github.com/JarbasHiveMind/hivemind-email/tree/0.1.3a2) (2026-09-25)
 
 [Full Changelog](https://github.com/JarbasHiveMind/hivemind-email/compare/0.1.3a1...0.1.3a2)
