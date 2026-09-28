@@ -5,7 +5,6 @@ on node A is handle_message'd on node B byte-identical -- no live SMTP/IMAP
 needed.
 """
 import json
-import threading
 from typing import List, Optional
 from unittest.mock import MagicMock
 
@@ -14,6 +13,10 @@ import pytest
 from hivemind_bus_client.message import HiveMessage, HiveMessageType
 from hivemind_email.carrier import EmailCarrier, EmailMessage, CHUNK_SIZE, _KIND_HIVE
 from hivemind_email.wormhole import EmailWormhole, _make_client_connection
+
+# shared with test_coded_disconnect.py; see tests/_fakes.py for why it is not
+# reached as ``from tests.test_wormhole import ...``.
+from _fakes import _FakeHmProtocol
 
 
 # ---------------------------------------------------------------------------
@@ -48,23 +51,6 @@ class _RoundTripCreds:
         if d.get("_fake"):
             return d["payload"]
         raise ValueError("Not fake-encrypted")
-
-
-class _FakeIdentity:
-    private_key = None
-
-
-class _FakeHmProtocol:
-    def __init__(self) -> None:
-        self.received: List[HiveMessage] = []
-        self.lock     = threading.Lock()
-        self.identity = _FakeIdentity()
-        from poorman_handshake.asymmetric import HandShake
-        self.identity_rsa_key = HandShake(None).private_key
-
-    def handle_message(self, msg: HiveMessage, client) -> None:
-        with self.lock:
-            self.received.append(msg)
 
 
 # ---------------------------------------------------------------------------
