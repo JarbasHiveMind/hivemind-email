@@ -64,7 +64,7 @@ def _make_client_connection(peer_id: str, carrier: EmailCarrier, peer_email: str
         # every one of those raises TypeError on this transport instead of
         # closing the peer. The other four transports already take them.
         LOG.debug(f"EmailWormhole: peer disconnected: {peer_id} "
-                  f"(code={code}, reason={reason})")
+                  f"(code={code}, reason={reason!r})")
 
     return HiveMindClientConnection(
         key         = peer_id,
