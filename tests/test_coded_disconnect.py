@@ -73,3 +73,20 @@ class TestTheCloseTakesACodeAndReason(unittest.TestCase):
         self.assertIn("1008", said)
         self.assertIn("origination permission denied", said)
 
+    def test_a_newline_in_the_reason_does_not_split_the_log_record(self):
+        """A reason is attacker-influenced free text. A newline in it must
+        not start a second, attacker-authored log line.
+
+        The raw logged string is read from ``call_args`` directly, not via
+        ``str(call_args_list)``: that formats each argument with ``repr()``
+        for display and would escape the newline on its own, passing this
+        test whether or not the production code escapes anything.
+        """
+        conn = _connection()
+        with unittest.mock.patch("hivemind_email.wormhole.LOG.debug") as dbg:
+            conn.disconnect(1008, "rejected\nBcc: attacker@evil.test")
+        self.assertEqual(dbg.call_count, 1)
+        message = dbg.call_args[0][0]
+        self.assertNotIn("\nBcc: attacker@evil.test", message)
+        self.assertIn("\\n", message)
+
