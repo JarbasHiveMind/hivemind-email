@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.5a1](https://github.com/JarbasHiveMind/hivemind-email/tree/0.1.5a1) (2026-11-13)
+
+[Full Changelog](https://github.com/JarbasHiveMind/hivemind-email/compare/0.1.4a1...0.1.5a1)
+
+**Merged pull requests:**
+
+- fix: escape close reason before logging it \(log forging\) [\#20](https://github.com/JarbasHiveMind/hivemind-email/pull/20) ([openvoiceos-bot](https://github.com/openvoiceos-bot))
+
 ## [0.1.4a1](https://github.com/JarbasHiveMind/hivemind-email/tree/0.1.4a1) (2026-09-28)
 
 [Full Changelog](https://github.com/JarbasHiveMind/hivemind-email/compare/0.1.3a2...0.1.4a1)
